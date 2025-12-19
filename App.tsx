@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef } from 'react';
 import { 
   FileText, 
@@ -8,7 +9,8 @@ import {
   Trash2, 
   PlusCircle, 
   ChevronRight,
-  Info
+  Info,
+  RefreshCw
 } from 'lucide-react';
 import { ReportData } from './types';
 import { enhanceReportContent } from './services/geminiService';
@@ -28,6 +30,19 @@ const App: React.FC = () => {
 
   const [isEnhancing, setIsEnhancing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const randomizeColor = () => {
+    // Generate a random vibrant but "lite" compatible color
+    const hue = Math.floor(Math.random() * 360);
+    const color = `hsl(${hue}, 70%, 50%)`;
+    
+    // Convert HSL to Hex (simple approximation for UI)
+    const ctx = document.createElement('canvas').getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = color;
+      setReport(prev => ({ ...prev, themeColor: ctx.fillStyle }));
+    }
+  };
 
   const extractColor = (dataUrl: string): Promise<string> => {
     return new Promise((resolve) => {
@@ -124,11 +139,20 @@ const App: React.FC = () => {
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Editor Sidebar */}
       <div className="w-full md:w-1/3 bg-white border-r border-slate-200 p-6 overflow-y-auto no-print">
-        <div className="flex items-center gap-2 mb-8">
-          <div className="bg-indigo-600 p-2 rounded-lg" style={{ backgroundColor: report.themeColor }}>
-            <FileText className="text-white" size={24} />
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-2">
+            <div className="bg-indigo-600 p-2 rounded-lg" style={{ backgroundColor: report.themeColor }}>
+              <FileText className="text-white" size={24} />
+            </div>
+            <h1 className="text-xl font-bold text-slate-800">Pembina Laporan</h1>
           </div>
-          <h1 className="text-xl font-bold text-slate-800">Pembina Laporan</h1>
+          <button 
+            onClick={randomizeColor}
+            className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-indigo-600"
+            title="Warna Rawak"
+          >
+            <RefreshCw size={20} />
+          </button>
         </div>
 
         <div className="space-y-6">
