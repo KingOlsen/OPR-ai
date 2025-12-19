@@ -1,0 +1,7 @@
+{
+  "name": "SK All Saints Report Generator",
+  "description": "An infographic-style school report generator for SK All Saints, featuring image uploads and AI-powered text refinement.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
