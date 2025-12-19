@@ -7,14 +7,20 @@ import {
   Sparkles, 
   Printer, 
   Trash2, 
-  PlusCircle, 
-  ChevronRight,
-  Info,
-  RefreshCw
+  RefreshCw,
+  Loader2,
+  Download
 } from 'lucide-react';
-import { ReportData } from './types';
-import { enhanceReportContent } from './services/geminiService';
+import { ReportData, ImageEntry } from './types';
+import { enhanceReportContent, detectFocalPoint } from './services/geminiService';
 import ReportContent from './components/ReportContent';
+
+// Extend Window interface for html2pdf global
+declare global {
+  interface Window {
+    html2pdf: any;
+  }
+}
 
 const App: React.FC = () => {
   const [report, setReport] = useState<ReportData>({
@@ -25,18 +31,17 @@ const App: React.FC = () => {
     impact: 'Peningkatan penyertaan pelajar dalam aktiviti luar.',
     images: [],
     layoutType: 'horizontal',
-    themeColor: '#4f46e5' // Default indigo
+    themeColor: '#4f46e5'
   });
 
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const randomizeColor = () => {
-    // Generate a random vibrant but "lite" compatible color
     const hue = Math.floor(Math.random() * 360);
     const color = `hsl(${hue}, 70%, 50%)`;
-    
-    // Convert HSL to Hex (simple approximation for UI)
     const ctx = document.createElement('canvas').getContext('2d');
     if (ctx) {
       ctx.fillStyle = color;
@@ -62,6 +67,16 @@ const App: React.FC = () => {
     });
   };
 
+  const processImageAI = async (url: string, mimeType: string, tempId: number) => {
+    const focalPoint = await detectFocalPoint(url, mimeType);
+    setReport(prev => ({
+      ...prev,
+      images: prev.images.map((img, idx) => 
+        idx === tempId ? { ...img, focalPoint, isProcessing: false } : img
+      )
+    }));
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -70,17 +85,23 @@ const App: React.FC = () => {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const dataUrl = reader.result as string;
+        const mimeType = file.type;
         
         let newThemeColor = report.themeColor;
         if (report.images.length === 0) {
           newThemeColor = await extractColor(dataUrl);
         }
 
+        const newEntry: ImageEntry = { url: dataUrl, focalPoint: null, isProcessing: true };
+        const newIndex = report.images.length;
+
         setReport(prev => ({
           ...prev,
-          images: [...prev.images, dataUrl],
+          images: [...prev.images, newEntry],
           themeColor: newThemeColor
         }));
+
+        processImageAI(dataUrl, mimeType, newIndex);
       };
       reader.readAsDataURL(file);
     });
@@ -111,7 +132,6 @@ const App: React.FC = () => {
       }));
     }
     setIsEnhancing(false);
-    return result;
   };
 
   const handlePrint = async () => {
@@ -129,19 +149,70 @@ const App: React.FC = () => {
       }
       setIsEnhancing(false);
     }
+    setTimeout(() => window.print(), 300);
+  };
+
+  const handleExportPDF = async () => {
+    if (!reportRef.current) return;
     
-    setTimeout(() => {
-      window.print();
-    }, 300);
+    setIsExporting(true);
+
+    // Polish content with AI if not already done
+    if (report.title && report.description) {
+      const result = await enhanceReportContent(report.title, report.description);
+      if (result) {
+        setReport(prev => ({
+          ...prev,
+          title: result.title,
+          description: result.description,
+          objective: result.objective,
+          impact: result.impact
+        }));
+      }
+    }
+
+    const element = reportRef.current;
+    
+    // Config for html2pdf to ensure a crisp single-page output
+    const opt = {
+      margin: 0,
+      filename: `OPR_${report.title.replace(/\s+/g, '_') || 'SK_ALL_SAINTS'}.pdf`,
+      image: { type: 'jpeg', quality: 1.0 },
+      html2canvas: { 
+        scale: 3, // Higher scale for text clarity
+        useCORS: true,
+        logging: false,
+        letterRendering: true,
+        scrollX: 0,
+        scrollY: 0
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: 'avoid-all' } // Strongly avoid splitting content
+    };
+
+    try {
+      // Force height to 297mm and apply specific capture classes
+      const originalStyle = element.getAttribute('style') || '';
+      element.style.height = '297mm';
+      element.style.width = '210mm';
+      element.style.overflow = 'hidden';
+      
+      await window.html2pdf().set(opt).from(element).save();
+      
+      element.setAttribute('style', originalStyle);
+    } catch (error) {
+      console.error('PDF Export Error:', error);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Editor Sidebar */}
       <div className="w-full md:w-1/3 bg-white border-r border-slate-200 p-6 overflow-y-auto no-print">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2">
-            <div className="bg-indigo-600 p-2 rounded-lg" style={{ backgroundColor: report.themeColor }}>
+            <div className="p-2 rounded-lg" style={{ backgroundColor: report.themeColor }}>
               <FileText className="text-white" size={24} />
             </div>
             <h1 className="text-xl font-bold text-slate-800">Pembina Laporan</h1>
@@ -149,7 +220,6 @@ const App: React.FC = () => {
           <button 
             onClick={randomizeColor}
             className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-indigo-600"
-            title="Warna Rawak"
           >
             <RefreshCw size={20} />
           </button>
@@ -162,8 +232,7 @@ const App: React.FC = () => {
               type="text" 
               value={report.title}
               onChange={(e) => setReport({...report, title: e.target.value})}
-              className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
-              placeholder="Masukkan tajuk program..."
+              className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
             />
           </section>
 
@@ -173,7 +242,7 @@ const App: React.FC = () => {
               type="date" 
               value={report.programDate}
               onChange={(e) => setReport({...report, programDate: e.target.value})}
-              className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
+              className="w-full p-3 border border-slate-200 rounded-lg outline-none"
             />
           </section>
 
@@ -183,7 +252,7 @@ const App: React.FC = () => {
               <button 
                 onClick={handleEnhance}
                 disabled={isEnhancing}
-                className="flex items-center gap-1 text-xs font-bold hover:opacity-80 disabled:opacity-50"
+                className="flex items-center gap-1 text-xs font-bold disabled:opacity-50"
                 style={{ color: report.themeColor }}
               >
                 <Sparkles size={14} />
@@ -194,8 +263,7 @@ const App: React.FC = () => {
               rows={4}
               value={report.description}
               onChange={(e) => setReport({...report, description: e.target.value})}
-              className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all outline-none text-sm"
-              placeholder="Huraikan secara ringkas mengenai program..."
+              className="w-full p-3 border border-slate-200 rounded-lg text-sm outline-none"
             />
           </section>
 
@@ -207,7 +275,7 @@ const App: React.FC = () => {
                style={{ borderColor: report.images.length > 0 ? report.themeColor : undefined }}
              >
                <ImageIcon className="text-slate-400 mb-2" size={32} />
-               <p className="text-sm text-slate-500 font-medium">Klik untuk muat naik 3+ foto</p>
+               <p className="text-sm text-slate-500 font-medium">Muat naik 3+ foto (AI Auto-Focus)</p>
                <input 
                  type="file" 
                  multiple 
@@ -222,7 +290,12 @@ const App: React.FC = () => {
                <div className="grid grid-cols-4 gap-2 mt-4">
                  {report.images.map((img, idx) => (
                    <div key={idx} className="relative group aspect-square rounded-md overflow-hidden bg-slate-100 border border-slate-200">
-                     <img src={img} className="w-full h-full object-cover" />
+                     <img src={img.url} className="w-full h-full object-cover" />
+                     {img.isProcessing && (
+                       <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+                         <Loader2 className="animate-spin text-indigo-600" size={16} />
+                       </div>
+                     )}
                      <button 
                        onClick={() => removeImage(idx)}
                        className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -240,7 +313,7 @@ const App: React.FC = () => {
             <div className="flex gap-2">
               <button 
                 onClick={() => setReport({...report, layoutType: 'horizontal'})}
-                className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${report.layoutType === 'horizontal' ? 'text-white shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${report.layoutType === 'horizontal' ? 'text-white' : 'bg-white text-slate-600 border-slate-200'}`}
                 style={report.layoutType === 'horizontal' ? { backgroundColor: report.themeColor, borderColor: report.themeColor } : {}}
               >
                 <Layout size={18} />
@@ -248,7 +321,7 @@ const App: React.FC = () => {
               </button>
               <button 
                 onClick={() => setReport({...report, layoutType: 'vertical'})}
-                className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${report.layoutType === 'vertical' ? 'text-white shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${report.layoutType === 'vertical' ? 'text-white' : 'bg-white text-slate-600 border-slate-200'}`}
                 style={report.layoutType === 'vertical' ? { backgroundColor: report.themeColor, borderColor: report.themeColor } : {}}
               >
                 <div className="rotate-90"><Layout size={18} /></div>
@@ -257,30 +330,46 @@ const App: React.FC = () => {
             </div>
           </section>
 
-          <button 
-            onClick={handlePrint}
-            disabled={isEnhancing}
-            className="w-full bg-slate-800 text-white p-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-900 transition-all shadow-lg active:scale-95 disabled:opacity-50"
-          >
-            {isEnhancing ? (
-              <>
-                <Sparkles className="animate-pulse" size={20} />
-                MEMURNIKAN KANDUNGAN...
-              </>
-            ) : (
-              <>
-                <Printer size={20} />
-                CETAK LAPORAN
-              </>
-            )}
-          </button>
+          <div className="flex flex-col gap-3 pt-4">
+            <button 
+              onClick={handlePrint}
+              disabled={isEnhancing || isExporting}
+              className="w-full bg-slate-100 text-slate-800 p-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-200 transition-all active:scale-95 disabled:opacity-50 border border-slate-200"
+            >
+              <Printer size={20} />
+              HASILKAN OPR
+            </button>
+            
+            <button 
+              onClick={handleExportPDF}
+              disabled={isEnhancing || isExporting}
+              className="w-full text-white p-4 rounded-xl font-black flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+              style={{ backgroundColor: report.themeColor }}
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="animate-spin" size={20} />
+                  MENJANA PDF...
+                </>
+              ) : (
+                <>
+                  <Download size={20} />
+                  EXPORT PDF
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Preview Area */}
-      <div className="flex-1 bg-slate-100 p-4 md:p-12 overflow-y-auto">
-        <div className="mx-auto bg-white shadow-2xl overflow-hidden print:shadow-none" style={{ width: '210mm', minHeight: '297mm', padding: '15mm' }}>
-          <ReportContent data={report} />
+      <div className="flex-1 bg-slate-100 p-4 md:p-12 overflow-y-auto flex justify-center">
+        <div 
+          className="bg-white shadow-2xl overflow-hidden print:shadow-none sticky top-4" 
+          style={{ width: '210mm', height: '297mm', minWidth: '210mm' }}
+        >
+          <div ref={reportRef} className="h-full w-full">
+            <ReportContent data={report} />
+          </div>
         </div>
       </div>
     </div>

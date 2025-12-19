@@ -1,13 +1,19 @@
 
+export interface ImageEntry {
+  url: string;
+  focalPoint: { x: number; y: number } | null;
+  isProcessing?: boolean;
+}
+
 export interface ReportData {
   title: string;
   programDate: string;
   description: string;
   objective: string;
   impact: string;
-  images: string[];
+  images: ImageEntry[];
   layoutType: 'vertical' | 'horizontal';
-  themeColor?: string; // Hex color extracted from images
+  themeColor?: string;
 }
 
 export interface GeminiResponse {
