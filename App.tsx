@@ -157,48 +157,47 @@ const App: React.FC = () => {
     
     setIsExporting(true);
 
-    // Polish content with AI if not already done
-    if (report.title && report.description) {
-      const result = await enhanceReportContent(report.title, report.description);
-      if (result) {
-        setReport(prev => ({
-          ...prev,
-          title: result.title,
-          description: result.description,
-          objective: result.objective,
-          impact: result.impact
-        }));
-      }
-    }
-
     const element = reportRef.current;
     
-    // Config for html2pdf to ensure a crisp single-page output
+    // Config for html2pdf
     const opt = {
       margin: 0,
       filename: `OPR_${report.title.replace(/\s+/g, '_') || 'SK_ALL_SAINTS'}.pdf`,
       image: { type: 'jpeg', quality: 1.0 },
       html2canvas: { 
-        scale: 3, // Higher scale for text clarity
+        scale: 4, // Very high scale for crispness
         useCORS: true,
         logging: false,
         letterRendering: true,
-        scrollX: 0,
-        scrollY: 0
       },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: 'avoid-all' } // Strongly avoid splitting content
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     try {
-      // Force height to 297mm and apply specific capture classes
-      const originalStyle = element.getAttribute('style') || '';
-      element.style.height = '297mm';
-      element.style.width = '210mm';
-      element.style.overflow = 'hidden';
+      // Create a temporary clone to calculate scale
+      const clone = element.cloneNode(true) as HTMLElement;
+      clone.style.position = 'absolute';
+      clone.style.left = '-9999px';
+      clone.style.top = '0';
+      clone.style.height = 'auto'; // Let it grow to measure it
+      document.body.appendChild(clone);
+
+      const targetHeightPx = 1122; // Approx px height for A4 @ 96dpi (297mm)
+      const actualHeightPx = clone.offsetHeight;
       
+      document.body.removeChild(clone);
+
+      // If content is too tall, apply a scale transform to the element before capture
+      const originalStyle = element.getAttribute('style') || '';
+      if (actualHeightPx > targetHeightPx) {
+        const scale = targetHeightPx / actualHeightPx;
+        element.style.transform = `scale(${scale})`;
+        element.style.transformOrigin = 'top center';
+      }
+
       await window.html2pdf().set(opt).from(element).save();
       
+      // Reset style
       element.setAttribute('style', originalStyle);
     } catch (error) {
       console.error('PDF Export Error:', error);

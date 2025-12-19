@@ -22,60 +22,59 @@ const ReportContent: React.FC<Props> = ({ data }) => {
   const imageCount = data.images.length;
   const displayImages = data.images.slice(0, 6);
   
+  // Dynamic heights and grids based on count to ensure vertical fit
   let gridCols = 'grid-cols-2';
-  let imgHeight = 'h-56';
+  let imgHeight = 'h-full'; // Default to let flex-1 handle it
 
   if (data.layoutType === 'horizontal') {
     if (imageCount <= 2) {
       gridCols = 'grid-cols-2';
-      imgHeight = 'h-80'; 
     } else if (imageCount === 3) {
       gridCols = 'grid-cols-3';
-      imgHeight = 'h-64'; 
     } else if (imageCount === 4) {
       gridCols = 'grid-cols-2';
-      imgHeight = 'h-56'; 
     } else {
       gridCols = 'grid-cols-3';
-      imgHeight = 'h-48'; 
     }
   } else {
     gridCols = 'grid-cols-1 max-w-md mx-auto';
-    imgHeight = imageCount > 3 ? 'h-48' : 'h-72'; 
   }
 
   return (
     <div 
-      className="h-[297mm] w-[210mm] flex flex-col p-6 rounded-sm shadow-inner relative overflow-hidden bg-white"
+      className="h-[297mm] w-[210mm] flex flex-col p-8 rounded-sm relative overflow-hidden bg-white"
       style={{ 
-        background: `linear-gradient(135deg, ${theme}10 0%, #ffffff 50%, ${theme}05 100%)`,
+        background: `linear-gradient(135deg, ${theme}08 0%, #ffffff 50%, ${theme}03 100%)`,
         color: primaryText,
       }}
     >
+      {/* Abstract Background Element */}
       <div 
-        className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] rounded-full blur-[120px] opacity-[0.1]"
+        className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[150px] opacity-[0.15]"
         style={{ backgroundColor: theme }}
       ></div>
 
-      <div className="relative z-10 flex flex-col h-full overflow-hidden">
+      <div className="relative z-10 flex flex-col h-full">
+        {/* Header Section - Compressed */}
         <header className="flex justify-between items-center pb-4 border-b border-slate-100 mb-4 shrink-0">
           <div>
             <h2 className="text-xl font-extrabold tracking-tighter text-slate-900 leading-tight">SK ALL SAINTS</h2>
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] flex items-center gap-1.5" style={{ color: secondaryText }}>
-              <MapPin size={10} style={{ color: theme }} /> Kamunting, Perak
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-1.5" style={{ color: secondaryText }}>
+              <MapPin size={12} style={{ color: theme }} /> Kamunting, Perak
             </p>
           </div>
-          <div className="bg-white p-1.5 rounded-xl border border-slate-50 shadow-sm">
-            <Award style={{ color: theme }} size={20} />
+          <div className="bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+            <Award style={{ color: theme }} size={24} />
           </div>
         </header>
 
-        <div className="mb-6 text-center shrink-0">
-          <h1 className="text-4xl font-black leading-tight mb-2 uppercase italic tracking-tighter" style={{ color: primaryText }}>
+        {/* Title Section - Compressed */}
+        <div className="mb-4 text-center shrink-0">
+          <h1 className="text-3xl font-black leading-tight mb-2 uppercase tracking-tighter" style={{ color: primaryText }}>
             {data.title || "TAJUK PROGRAM"}
           </h1>
           <div 
-            className="inline-flex items-center gap-2 bg-white border border-slate-100 px-4 py-1 rounded-full font-bold text-[10px] shadow-sm"
+            className="inline-flex items-center gap-2 bg-slate-50 border border-slate-100 px-4 py-1 rounded-full font-bold text-[10px]"
             style={{ color: secondaryText }}
           >
             <Calendar size={12} style={{ color: theme }} />
@@ -83,51 +82,53 @@ const ReportContent: React.FC<Props> = ({ data }) => {
           </div>
         </div>
 
+        {/* Infographic Stats Section - Tightened */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 shrink-0">
-          <div className="bg-white/60 backdrop-blur-sm p-5 rounded-[1.5rem] border border-slate-50 flex flex-col justify-center shadow-sm">
-            <h3 className="font-black text-[8px] uppercase tracking-[0.3em] mb-2" style={{ color: theme }}>Ringkasan Eksekutif</h3>
-            <p className="text-base leading-snug font-medium italic text-slate-700">
+          <div className="bg-white/80 backdrop-blur-sm p-4 rounded-3xl border border-slate-100 flex flex-col justify-center shadow-sm">
+            <h3 className="font-black text-[9px] uppercase tracking-[0.3em] mb-2" style={{ color: theme }}>Ringkasan Eksekutif</h3>
+            <p className="text-sm leading-relaxed font-medium text-slate-700 italic">
               "{data.description}"
             </p>
           </div>
 
           <div className="space-y-3 flex flex-col justify-center">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl border bg-white border-slate-50 shadow-sm">
+            <div className="flex items-center gap-3 bg-white/40 p-2 rounded-2xl">
+              <div className="p-2 rounded-xl bg-white shadow-sm">
                 <Target style={{ color: theme }} size={18} />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h4 className="font-black text-[8px] uppercase tracking-widest text-slate-400">Objektif Utama</h4>
-                <p className="font-bold text-sm" style={{ color: primaryText }}>{data.objective}</p>
+                <p className="font-bold text-xs truncate" style={{ color: primaryText }}>{data.objective}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl border bg-white border-slate-50 shadow-sm">
+            <div className="flex items-center gap-3 bg-white/40 p-2 rounded-2xl">
+              <div className="p-2 rounded-xl bg-white shadow-sm">
                 <TrendingUp className="text-emerald-500" size={18} />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h4 className="font-black text-[8px] uppercase tracking-widest text-slate-400">Impak Utama</h4>
-                <p className="font-bold text-sm" style={{ color: primaryText }}>{data.impact}</p>
+                <p className="font-bold text-xs truncate" style={{ color: primaryText }}>{data.impact}</p>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Main Gallery Section - Takes remaining space */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <div className="flex items-center gap-3 mb-4 shrink-0">
-            <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-slate-100"></div>
-            <h3 className="text-[8px] font-black uppercase tracking-[0.4em] whitespace-nowrap" style={{ color: secondaryText }}>Galeri Fokus AI</h3>
-            <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-slate-100"></div>
+            <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-slate-200"></div>
+            <h3 className="text-[9px] font-black uppercase tracking-[0.4em] whitespace-nowrap" style={{ color: secondaryText }}>Galeri Fokus AI</h3>
+            <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-slate-200"></div>
           </div>
           
-          <div className="flex-1 overflow-hidden flex items-center justify-center">
+          <div className="flex-1 min-h-0">
             {displayImages.length === 0 ? (
-              <div className="w-full h-full max-h-64 bg-slate-50/50 border-2 border-dashed border-slate-100 rounded-[2.5rem] flex flex-col items-center justify-center text-slate-300">
-                <ImageIcon size={32} className="mb-2 opacity-50" style={{ color: theme }} />
-                <p className="text-[10px] font-black uppercase tracking-widest">Sila muat naik foto</p>
+              <div className="w-full h-full bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center text-slate-300">
+                <ImageIcon size={48} className="mb-2 opacity-50" style={{ color: theme }} />
+                <p className="text-xs font-black uppercase tracking-widest">Sila muat naik foto</p>
               </div>
             ) : (
-              <div className={`w-full grid gap-4 ${gridCols}`}>
+              <div className={`w-full h-full grid gap-4 ${gridCols}`}>
                 {displayImages.map((img, idx) => {
                   const x = img.focalPoint?.x ?? 50;
                   const y = img.focalPoint?.y ?? 50;
@@ -135,19 +136,18 @@ const ReportContent: React.FC<Props> = ({ data }) => {
                   return (
                     <div 
                       key={idx} 
-                      className={`relative overflow-hidden rounded-2xl shadow-md border border-slate-50 transition-all ${imgHeight}`}
+                      className="relative overflow-hidden rounded-3xl shadow-lg border border-white transition-all h-full"
                     >
                       <img 
                         src={img.url} 
-                        className="w-full h-full object-cover transition-transform duration-1000" 
+                        className="w-full h-full object-cover" 
                         style={{ 
                           objectPosition: `${x}% ${y}%`,
-                          transform: 'scale(1.2)' 
                         }}
                         alt={`Gallery item ${idx + 1}`} 
                       />
-                      <div className="absolute top-2 left-2 bg-white/70 backdrop-blur-md px-2 py-0.5 rounded-md text-[7px] font-bold uppercase tracking-tighter shadow-sm flex items-center gap-1">
-                        <Sparkles size={8} className="text-indigo-600" /> AI-Focus {idx + 1}
+                      <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-md px-2 py-1 rounded-xl text-[8px] font-black uppercase tracking-tighter shadow-sm flex items-center gap-1.5">
+                        <Sparkles size={10} className="text-indigo-600" /> AI-Focus {idx + 1}
                       </div>
                     </div>
                   );
@@ -157,16 +157,17 @@ const ReportContent: React.FC<Props> = ({ data }) => {
           </div>
         </div>
 
-        <footer className="mt-auto pt-4 border-t border-slate-100 shrink-0">
+        {/* Footer Section - Fixed at bottom */}
+        <footer className="mt-6 pt-4 border-t border-slate-100 shrink-0">
           <div className="flex justify-between items-end">
             <div className="max-w-xs">
               <p className="text-[8px] font-black uppercase mb-4 tracking-[0.2em]" style={{ color: secondaryText }}>Disediakan Oleh</p>
               <div className="h-0.5 w-24 bg-slate-900/10 mb-1.5"></div>
               <p className="text-xs font-black" style={{ color: primaryText }}>PENYELARAS PROGRAM</p>
-              <p className="text-[8px] font-bold uppercase opacity-60" style={{ color: secondaryText }}>SK All Saints · Perak</p>
+              <p className="text-[9px] font-bold uppercase opacity-60" style={{ color: secondaryText }}>SK All Saints · Perak</p>
             </div>
             <div className="text-right">
-              <p className="text-[7px] font-medium italic opacity-30">Laporan dijana secara digital &copy; 2024</p>
+              <p className="text-[8px] font-medium italic opacity-30">Laporan dijana secara digital &copy; 2024</p>
             </div>
           </div>
         </footer>
