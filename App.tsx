@@ -9,7 +9,10 @@ import {
   Trash2, 
   RefreshCw,
   Loader2,
-  Download
+  Download,
+  Target,
+  Check,
+  X
 } from 'lucide-react';
 import { ReportData, ImageEntry } from './types';
 import { enhanceReportContent, detectFocalPoint } from './services/geminiService';
@@ -36,9 +39,13 @@ const App: React.FC = () => {
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [previewScale, setPreviewScale] = useState(1);
+  const [editingFocalPointIdx, setEditingFocalPointIdx] = useState<number | null>(null);
+  const [tempFocalPoint, setTempFocalPoint] = useState<{x: number, y: number} | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const reportRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const focalPointEditorRef = useRef<HTMLDivElement>(null);
 
   // Responsive scaling for the preview
   useEffect(() => {
@@ -72,7 +79,7 @@ const App: React.FC = () => {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const dataUrl = reader.result as string;
-        const newEntry: ImageEntry = { url: dataUrl, focalPoint: null, isProcessing: true };
+        const newEntry: ImageEntry = { url: dataUrl, focalPoint: { x: 50, y: 50 }, isProcessing: true };
         const newIndex = report.images.length;
 
         setReport(prev => ({ ...prev, images: [...prev.images, newEntry] }));
@@ -81,7 +88,7 @@ const App: React.FC = () => {
         setReport(prev => ({
           ...prev,
           images: prev.images.map((img, idx) => 
-            idx === newIndex ? { ...img, focalPoint, isProcessing: false } : img
+            idx === newIndex ? { ...img, focalPoint: focalPoint || { x: 50, y: 50 }, isProcessing: false } : img
           )
         }));
       };
@@ -94,6 +101,32 @@ const App: React.FC = () => {
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
     }));
+  };
+
+  const openFocalPointEditor = (index: number) => {
+    setEditingFocalPointIdx(index);
+    setTempFocalPoint(report.images[index].focalPoint || { x: 50, y: 50 });
+  };
+
+  const handleFocalPointClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!focalPointEditorRef.current) return;
+    const rect = focalPointEditorRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setTempFocalPoint({ x, y });
+  };
+
+  const saveFocalPoint = () => {
+    if (editingFocalPointIdx !== null && tempFocalPoint) {
+      const newImages = [...report.images];
+      newImages[editingFocalPointIdx] = {
+        ...newImages[editingFocalPointIdx],
+        focalPoint: tempFocalPoint
+      };
+      setReport({ ...report, images: newImages });
+    }
+    setEditingFocalPointIdx(null);
+    setTempFocalPoint(null);
   };
 
   const handleEnhance = async () => {
@@ -112,21 +145,47 @@ const App: React.FC = () => {
 
     const element = reportRef.current;
     
+    // Total A4 is 210mm x 297mm.
+    // Setting margins to shift slightly left (e.g. 3mm left margin instead of 5mm+)
+    const margins = [10, 3, 10, 7]; // [top, left, bottom, right] in mm
+    const targetWidthMm = 210 - margins[1] - margins[3]; // 200mm width content
+    const targetHeightMm = 297 - margins[0] - margins[2]; // 277mm height content
+
+    const widthPx = Math.floor(targetWidthMm * 3.7795);
+    const heightPx = Math.floor(targetHeightMm * 3.7795);
+
     const opt = {
-      margin: 0,
-      filename: `Report_A4_${report.title.replace(/\s+/g, '_')}.pdf`,
+      margin: margins,
+      filename: `Laporan_A4_SK_ALL_SAINTS_${report.title.replace(/\s+/g, '_') || 'Digital'}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
-        scale: 3, 
+        scale: 2.0, 
         useCORS: true,
         letterRendering: true,
+        width: widthPx,
+        height: heightPx, 
+        scrollY: 0,
+        scrollX: 0,
+        windowWidth: widthPx,
+        windowHeight: heightPx
       },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: 'avoid-all' }
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      pagebreak: { mode: ['avoid-all'] }
     };
 
     try {
-      await window.html2pdf().set(opt).from(element).save();
+      const originalStyle = element.style.cssText;
+      // Lock dimensions for capture to fit the calculated printable area
+      element.style.width = `${targetWidthMm}mm`;
+      element.style.height = `${targetHeightMm}mm`;
+      element.style.position = 'relative';
+      element.style.top = '0';
+      element.style.left = '0';
+      element.style.margin = '0';
+
+      await window.html2pdf().set(opt).from(element).toPdf().save();
+      
+      element.style.cssText = originalStyle;
     } catch (error) {
       console.error('PDF Export Error:', error);
     } finally {
@@ -200,16 +259,35 @@ const App: React.FC = () => {
              {report.images.length > 0 && (
                <div className="grid grid-cols-4 gap-2 mt-3">
                  {report.images.map((img, idx) => (
-                   <div key={idx} className="relative aspect-square rounded-lg overflow-hidden group border border-slate-100">
-                     <img src={img.url} className="w-full h-full object-cover" />
+                   <div key={idx} className="relative aspect-square rounded-lg overflow-hidden group border border-slate-100 bg-slate-100">
+                     <img 
+                       src={img.url} 
+                       className="w-full h-full object-cover" 
+                       style={{ 
+                        objectPosition: `${img.focalPoint?.x ?? 50}% ${img.focalPoint?.y ?? 50}%`,
+                      }}
+                     />
                      {img.isProcessing && (
                        <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
                          <Loader2 className="animate-spin text-indigo-600" size={14} />
                        </div>
                      )}
-                     <button onClick={() => removeImage(idx)} className="absolute inset-0 bg-red-500/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                       <Trash2 className="text-white" size={16} />
-                     </button>
+                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                       <button 
+                         onClick={() => openFocalPointEditor(idx)} 
+                         className="p-1.5 bg-white text-black rounded-lg hover:bg-slate-100 shadow-lg"
+                         title="Set Focal Point"
+                       >
+                         <Target size={14} />
+                       </button>
+                       <button 
+                         onClick={() => removeImage(idx)} 
+                         className="p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 shadow-lg"
+                         title="Hapus"
+                       >
+                         <Trash2 size={14} />
+                       </button>
+                     </div>
                    </div>
                  ))}
                </div>
@@ -258,7 +336,7 @@ const App: React.FC = () => {
       {/* Preview Area */}
       <div 
         ref={containerRef}
-        className="flex-1 p-4 md:p-8 overflow-auto flex justify-center bg-slate-200 items-start"
+        className="flex-1 p-4 md:p-8 overflow-auto flex justify-center bg-slate-200 items-start relative"
       >
         <div 
           className="bg-white shadow-2xl origin-top transition-transform duration-300 print:transform-none" 
@@ -274,6 +352,65 @@ const App: React.FC = () => {
             <ReportContent data={report} />
           </div>
         </div>
+
+        {/* Focal Point Editor Modal */}
+        {editingFocalPointIdx !== null && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl animate-in fade-in zoom-in duration-200">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-black text-black">LARAS TITIK FOKUS</h3>
+                <button onClick={() => setEditingFocalPointIdx(null)} className="p-2 hover:bg-slate-100 rounded-full">
+                  <X size={20} className="text-slate-400" />
+                </button>
+              </div>
+              
+              <p className="text-xs font-bold text-slate-500 mb-4 uppercase tracking-wider">
+                Klik pada gambar untuk menetapkan pusat perhatian
+              </p>
+
+              <div 
+                ref={focalPointEditorRef}
+                onClick={handleFocalPointClick}
+                className="relative cursor-crosshair rounded-xl overflow-hidden bg-slate-200 aspect-video mb-6 border border-slate-100 group"
+              >
+                <img 
+                  src={report.images[editingFocalPointIdx].url} 
+                  className="w-full h-full object-contain pointer-events-none"
+                  alt="Editor"
+                />
+                {tempFocalPoint && (
+                  <div 
+                    className="absolute w-10 h-10 border-2 border-white rounded-full flex items-center justify-center shadow-2xl -translate-x-1/2 -translate-y-1/2 transition-all duration-200 pointer-events-none"
+                    style={{ 
+                      left: `${tempFocalPoint.x}%`, 
+                      top: `${tempFocalPoint.y}%`,
+                      backgroundColor: `${report.themeColor}40`
+                    }}
+                  >
+                    <div className="w-1.5 h-1.5 bg-white rounded-full shadow-sm" />
+                    <Target size={24} className="text-white absolute opacity-50" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setEditingFocalPointIdx(null)}
+                  className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-all"
+                >
+                  BATAL
+                </button>
+                <button 
+                  onClick={saveFocalPoint}
+                  className="flex-1 py-3 text-white rounded-xl font-black flex items-center justify-center gap-2 shadow-lg hover:opacity-90 transition-all"
+                  style={{ backgroundColor: report.themeColor }}
+                >
+                  <Check size={20} /> TETAPKAN
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
