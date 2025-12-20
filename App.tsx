@@ -42,11 +42,7 @@ const App: React.FC = () => {
   const randomizeColor = () => {
     const hue = Math.floor(Math.random() * 360);
     const color = `hsl(${hue}, 70%, 50%)`;
-    const ctx = document.createElement('canvas').getContext('2d');
-    if (ctx) {
-      ctx.fillStyle = color;
-      setReport(prev => ({ ...prev, themeColor: ctx.fillStyle }));
-    }
+    setReport(prev => ({ ...prev, themeColor: color }));
   };
 
   const extractColor = (dataUrl: string): Promise<string> => {
@@ -158,50 +154,51 @@ const App: React.FC = () => {
     setIsExporting(true);
 
     const element = reportRef.current;
+    const originalStyle = element.getAttribute('style') || '';
+
+    // Step 1: Force element to natural height to check for overflow
+    element.style.height = 'auto';
+    element.style.minHeight = '297mm';
     
+    // Calculate required scale to fit 297mm height
+    // 297mm is approx 1123px at 96 DPI
+    const targetHeightPx = 1122.5; 
+    const actualHeightPx = element.offsetHeight;
+    
+    let scale = 1;
+    if (actualHeightPx > targetHeightPx) {
+      scale = targetHeightPx / actualHeightPx;
+      element.style.transform = `scale(${scale})`;
+      element.style.transformOrigin = 'top center';
+      // Adjust width to compensate for scaling so it still fills A4 width
+      element.style.width = `${210 / scale}mm`;
+    } else {
+      element.style.height = '297mm';
+      element.style.width = '210mm';
+    }
+
     // Config for html2pdf
     const opt = {
       margin: 0,
-      filename: `OPR_${report.title.replace(/\s+/g, '_') || 'SK_ALL_SAINTS'}.pdf`,
-      image: { type: 'jpeg', quality: 1.0 },
+      filename: `Laporan_${report.title.replace(/\s+/g, '_') || 'SK_ALL_SAINTS'}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
-        scale: 4, // Very high scale for crispness
+        scale: 3 / (scale < 1 ? scale : 1), // Increase capture scale if we scaled down to maintain quality
         useCORS: true,
         logging: false,
         letterRendering: true,
       },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: 'avoid-all' }
     };
 
     try {
-      // Create a temporary clone to calculate scale
-      const clone = element.cloneNode(true) as HTMLElement;
-      clone.style.position = 'absolute';
-      clone.style.left = '-9999px';
-      clone.style.top = '0';
-      clone.style.height = 'auto'; // Let it grow to measure it
-      document.body.appendChild(clone);
-
-      const targetHeightPx = 1122; // Approx px height for A4 @ 96dpi (297mm)
-      const actualHeightPx = clone.offsetHeight;
-      
-      document.body.removeChild(clone);
-
-      // If content is too tall, apply a scale transform to the element before capture
-      const originalStyle = element.getAttribute('style') || '';
-      if (actualHeightPx > targetHeightPx) {
-        const scale = targetHeightPx / actualHeightPx;
-        element.style.transform = `scale(${scale})`;
-        element.style.transformOrigin = 'top center';
-      }
-
       await window.html2pdf().set(opt).from(element).save();
-      
-      // Reset style
-      element.setAttribute('style', originalStyle);
     } catch (error) {
       console.error('PDF Export Error:', error);
     } finally {
+      // Restore original styling
+      element.setAttribute('style', originalStyle);
       setIsExporting(false);
     }
   };

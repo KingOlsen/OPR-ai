@@ -1,8 +1,12 @@
 
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 
+// Initialize the Google GenAI client using a factory function to ensure the latest API key is used
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+/**
+ * Enhances the report content using Gemini 3 Flash.
+ */
 export const enhanceReportContent = async (
   rawTitle: string,
   rawInfo: string
@@ -24,6 +28,7 @@ export const enhanceReportContent = async (
       contents: prompt,
       config: {
         responseMimeType: "application/json",
+        // Recommended: Use responseSchema for structured JSON output
         responseSchema: {
           type: Type.OBJECT,
           properties: {
@@ -37,13 +42,18 @@ export const enhanceReportContent = async (
       }
     });
 
-    return JSON.parse(response.text);
+    // Directly access the .text property of GenerateContentResponse
+    const text = response.text;
+    return text ? JSON.parse(text) : null;
   } catch (error) {
     console.error("Gemini Error:", error);
     return null;
   }
 };
 
+/**
+ * Detects the focal point (most prominent faces/people) in an image using Gemini 3 Flash.
+ */
 export const detectFocalPoint = async (base64Data: string, mimeType: string): Promise<{x: number, y: number} | null> => {
   const ai = getAI();
   
@@ -64,11 +74,21 @@ export const detectFocalPoint = async (base64Data: string, mimeType: string): Pr
       contents: { parts: [imagePart, textPart] },
       config: {
         responseMimeType: "application/json",
+        // Recommended: Use responseSchema to ensure the output matches the expected JSON structure
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            x: { type: Type.NUMBER },
+            y: { type: Type.NUMBER }
+          },
+          required: ["x", "y"]
+        }
       }
     });
 
-    if (response.text) {
-      return JSON.parse(response.text);
+    const text = response.text;
+    if (text) {
+      return JSON.parse(text);
     }
     return null;
   } catch (error) {
