@@ -16,13 +16,12 @@ const ReportContent: React.FC<Props> = ({ data }) => {
     year: 'numeric'
   });
 
-  const secondaryText = '#475569'; 
-  const primaryText = '#1e293b';
+  const secondaryText = '#000000'; 
+  const primaryText = '#000000';
 
   const imageCount = data.images.length;
   const displayImages = data.images.slice(0, 6);
   
-  // Dynamic grid columns based on layout and image count
   let gridCols = 'grid-cols-2';
   if (data.layoutType === 'horizontal') {
     if (imageCount === 3 || imageCount >= 5) {
@@ -31,48 +30,46 @@ const ReportContent: React.FC<Props> = ({ data }) => {
       gridCols = 'grid-cols-2';
     }
   } else {
-    gridCols = 'grid-cols-1 max-w-md mx-auto';
+    gridCols = 'grid-cols-1 max-w-[140mm] mx-auto';
   }
 
-  // If there are more images, we might need more rows, but we must keep it to 1 page.
-  // We use h-full and flex-1 to ensure the gallery container is exactly the remaining space.
   const gridRows = displayImages.length > 3 && data.layoutType === 'horizontal' ? 'grid-rows-2' : 'grid-rows-1';
 
   return (
     <div 
-      className="h-[297mm] w-[210mm] flex flex-col p-10 rounded-sm relative overflow-hidden bg-white shadow-inner"
+      className="h-[297mm] w-[210mm] flex flex-col p-12 relative overflow-hidden bg-white box-border"
       style={{ 
         background: `linear-gradient(135deg, ${theme}08 0%, #ffffff 50%, ${theme}03 100%)`,
         color: primaryText,
       }}
     >
-      {/* Decorative background element */}
+      {/* Background Decor */}
       <div 
-        className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full blur-[160px] opacity-[0.1]"
+        className="absolute top-[-5%] right-[-5%] w-[50%] h-[50%] rounded-full blur-[120px] opacity-[0.1]"
         style={{ backgroundColor: theme }}
       ></div>
 
       <div className="relative z-10 flex flex-col h-full w-full">
-        {/* Header - Fixed Height */}
-        <header className="flex justify-between items-center pb-5 border-b-2 border-slate-100 mb-6 flex-shrink-0">
+        {/* Header Section */}
+        <header className="flex justify-between items-center pb-6 border-b-2 border-slate-100 mb-8 flex-shrink-0">
           <div>
-            <h2 className="text-2xl font-black tracking-tighter text-slate-900 leading-tight">SK ALL SAINTS</h2>
-            <p className="text-xs font-bold uppercase tracking-[0.25em] flex items-center gap-2" style={{ color: secondaryText }}>
-              <MapPin size={14} style={{ color: theme }} /> Kamunting, Perak
+            <h2 className="text-3xl font-black tracking-tighter text-black leading-none mb-1 uppercase">SK ALL SAINTS</h2>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2" style={{ color: secondaryText }}>
+              <MapPin size={12} style={{ color: theme }} /> Kamunting, Taiping, Perak
             </p>
           </div>
-          <div className="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm">
-            <Award style={{ color: theme }} size={28} />
+          <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
+            <Award style={{ color: theme }} size={32} />
           </div>
         </header>
 
-        {/* Program Title and Date - Fixed Height */}
-        <div className="mb-6 text-center flex-shrink-0">
-          <h1 className="text-4xl font-black leading-tight mb-3 uppercase tracking-tighter break-words" style={{ color: primaryText }}>
-            {data.title || "TAJUK PROGRAM"}
+        {/* Title Section */}
+        <div className="mb-8 text-center flex-shrink-0">
+          <h1 className="text-5xl font-black leading-tight mb-4 uppercase tracking-tighter" style={{ color: primaryText }}>
+            {data.title || "LAPORAN PROGRAM"}
           </h1>
           <div 
-            className="inline-flex items-center gap-2 bg-slate-50/80 border border-slate-100 px-5 py-1.5 rounded-full font-bold text-xs"
+            className="inline-flex items-center gap-2 bg-slate-50 border border-slate-100 px-6 py-2 rounded-full font-black text-xs uppercase"
             style={{ color: secondaryText }}
           >
             <Calendar size={14} style={{ color: theme }} />
@@ -80,88 +77,83 @@ const ReportContent: React.FC<Props> = ({ data }) => {
           </div>
         </div>
 
-        {/* Infographic Section - Flex-shrink-0 to ensure all text is visible */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 flex-shrink-0">
-          <div className="bg-white/90 backdrop-blur-sm p-6 rounded-[2rem] border border-slate-100 flex flex-col justify-center shadow-sm h-full">
-            <h3 className="font-black text-[10px] uppercase tracking-[0.4em] mb-3" style={{ color: theme }}>Ringkasan Eksekutif</h3>
-            <p className="text-base leading-relaxed font-semibold text-slate-700 italic whitespace-pre-wrap">
+        {/* Info Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 flex-shrink-0">
+          <div className="bg-white/80 backdrop-blur-sm p-8 rounded-[2.5rem] border border-slate-100 flex flex-col justify-center shadow-sm">
+            <h3 className="font-black text-[9px] uppercase tracking-[0.5em] mb-4" style={{ color: theme }}>Ringkasan Eksekutif</h3>
+            <p className="text-lg leading-relaxed font-bold text-black italic">
               "{data.description}"
             </p>
           </div>
 
-          <div className="space-y-4 flex flex-col justify-center">
-            <div className="flex items-start gap-4 bg-white/50 p-3 rounded-2xl border border-transparent">
-              <div className="p-2.5 rounded-xl bg-white shadow-sm flex-shrink-0">
-                <Target style={{ color: theme }} size={22} />
+          <div className="space-y-5 flex flex-col justify-center">
+            <div className="flex items-start gap-5 bg-white/40 p-4 rounded-2xl border border-transparent">
+              <div className="p-3 rounded-xl bg-white shadow-sm flex-shrink-0">
+                <Target style={{ color: theme }} size={24} />
               </div>
               <div>
-                <h4 className="font-black text-[9px] uppercase tracking-widest text-slate-400 mb-1">Objektif Utama</h4>
-                <p className="font-bold text-sm leading-tight break-words" style={{ color: primaryText }}>{data.objective}</p>
+                <h4 className="font-black text-[9px] uppercase tracking-widest text-black mb-1">Objektif</h4>
+                <p className="font-bold text-base leading-tight" style={{ color: primaryText }}>{data.objective}</p>
               </div>
             </div>
-            <div className="flex items-start gap-4 bg-white/50 p-3 rounded-2xl border border-transparent">
-              <div className="p-2.5 rounded-xl bg-white shadow-sm flex-shrink-0">
-                <TrendingUp className="text-emerald-500" size={22} />
+            <div className="flex items-start gap-5 bg-white/40 p-4 rounded-2xl border border-transparent">
+              <div className="p-3 rounded-xl bg-white shadow-sm flex-shrink-0">
+                <TrendingUp className="text-emerald-600" size={24} />
               </div>
               <div>
-                <h4 className="font-black text-[9px] uppercase tracking-widest text-slate-400 mb-1">Impak Utama</h4>
-                <p className="font-bold text-sm leading-tight break-words" style={{ color: primaryText }}>{data.impact}</p>
+                <h4 className="font-black text-[9px] uppercase tracking-widest text-black mb-1">Impak</h4>
+                <p className="font-bold text-base leading-tight" style={{ color: primaryText }}>{data.impact}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Gallery Divider */}
-        <div className="flex items-center gap-4 mb-5 flex-shrink-0">
-          <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
-          <h3 className="text-[10px] font-black uppercase tracking-[0.5em] whitespace-nowrap" style={{ color: secondaryText }}>Visual Dokumentasi</h3>
-          <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent via-slate-200 to-transparent"></div>
+        <div className="flex items-center gap-5 mb-6 flex-shrink-0">
+          <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+          <h3 className="text-[11px] font-black uppercase tracking-[0.6em] whitespace-nowrap" style={{ color: secondaryText }}>Dokumentasi Visual</h3>
+          <div className="h-[2px] flex-1 bg-gradient-to-l from-transparent via-slate-200 to-transparent"></div>
         </div>
         
-        {/* Main Gallery Section - Flex-1 and Min-h-0 allows it to absorb all remaining space */}
-        <div className="flex-1 min-h-0 mb-6 overflow-hidden">
+        {/* Main Image Gallery */}
+        <div className="flex-1 min-h-0 mb-8 overflow-hidden">
           {displayImages.length === 0 ? (
-            <div className="w-full h-full bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-[3rem] flex flex-col items-center justify-center text-slate-300">
+            <div className="w-full h-full bg-slate-50 border-2 border-dashed border-slate-200 rounded-[3rem] flex flex-col items-center justify-center text-black">
               <ImageIcon size={64} className="mb-4 opacity-50" style={{ color: theme }} />
-              <p className="text-sm font-black uppercase tracking-[0.2em]">Muat Naik Foto Untuk Melengkapkan Laporan</p>
+              <p className="text-xs font-black uppercase tracking-[0.3em]">Sila Lampirkan Foto Program</p>
             </div>
           ) : (
-            <div className={`w-full h-full grid gap-5 ${gridCols} ${gridRows}`}>
-              {displayImages.map((img, idx) => {
-                const x = img.focalPoint?.x ?? 50;
-                const y = img.focalPoint?.y ?? 50;
-                
-                return (
-                  <div 
-                    key={idx} 
-                    className="relative overflow-hidden rounded-[2rem] shadow-xl border-4 border-white transition-all bg-slate-100 h-full"
-                  >
-                    <img 
-                      src={img.url} 
-                      className="w-full h-full object-cover" 
-                      style={{ 
-                        objectPosition: `${x}% ${y}%`,
-                      }}
-                      alt={`Gallery item ${idx + 1}`} 
-                    />
-                  </div>
-                );
-              })}
+            <div className={`w-full h-full grid gap-6 ${gridCols} ${gridRows}`}>
+              {displayImages.map((img, idx) => (
+                <div 
+                  key={idx} 
+                  className="relative overflow-hidden rounded-[2.5rem] shadow-xl border-4 border-white bg-slate-100 h-full"
+                >
+                  <img 
+                    src={img.url} 
+                    className="w-full h-full object-cover" 
+                    style={{ 
+                      objectPosition: `${img.focalPoint?.x ?? 50}% ${img.focalPoint?.y ?? 50}%`,
+                    }}
+                    alt="" 
+                  />
+                </div>
+              ))}
             </div>
           )}
         </div>
 
-        {/* Footer - Fixed Height */}
-        <footer className="pt-6 border-t-2 border-slate-100 flex-shrink-0">
+        {/* A4 Footer */}
+        <footer className="pt-8 border-t-2 border-slate-100 flex-shrink-0">
           <div className="flex justify-between items-end">
             <div className="max-w-xs">
-              <p className="text-[9px] font-black uppercase mb-5 tracking-[0.3em]" style={{ color: secondaryText }}>Pengesahan Penyelaras</p>
-              <div className="h-0.5 w-32 bg-slate-900 mb-2"></div>
-              <p className="text-sm font-black tracking-tight" style={{ color: primaryText }}>UNIT KOKURIKULUM</p>
-              <p className="text-[10px] font-bold uppercase opacity-60 tracking-wider" style={{ color: secondaryText }}>SK All Saints, Perak</p>
+              <p className="text-[9px] font-black uppercase mb-6 tracking-[0.4em]" style={{ color: secondaryText }}>Disediakan Oleh</p>
+              <div className="h-0.5 w-40 bg-black mb-2"></div>
+              <p className="text-base font-black tracking-tight" style={{ color: primaryText }}>PENGURUSAN KOKURIKULUM</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: secondaryText }}>SK All Saints, Taiping</p>
             </div>
             <div className="text-right pb-1">
-              <p className="text-[9px] font-bold italic opacity-40 uppercase tracking-widest">Digital OPR System &bull; 2024</p>
+              <p className="text-[10px] font-black italic opacity-60 uppercase tracking-[0.2em]">Sistem Laporan Digital OPR &bull; v2.5</p>
             </div>
           </div>
         </footer>

@@ -18,19 +18,21 @@
             font-family: 'Montserrat', sans-serif;
         }
         @media print {
+            @page {
+                size: A4;
+                margin: 0;
+            }
             .no-print {
                 display: none !important;
-            }
-            .print-only {
-                display: block !important;
             }
             body {
                 background-color: white !important;
                 margin: 0;
                 padding: 0;
             }
-            .page-break {
-                page-break-after: always;
+            #root {
+                margin: 0;
+                padding: 0;
             }
         }
     </style>
