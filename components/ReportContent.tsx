@@ -149,8 +149,7 @@ const ReportContent: React.FC<Props> = ({ data }) => {
             <div className="max-w-xs">
               <p className="text-[8px] md:text-[9px] font-black uppercase mb-4 md:mb-6 tracking-[0.4em]" style={{ color: secondaryText }}>Disediakan Oleh</p>
               <div className="h-0.5 w-32 md:w-40 bg-black mb-2"></div>
-              <p className="text-sm md:text-base font-black tracking-tight" style={{ color: primaryText }}>PENGURUSAN KOKURIKULUM</p>
-              <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest" style={{ color: secondaryText }}>SK All Saints, Taiping</p>
+              <p className="text-sm md:text-base font-black tracking-tight" style={{ color: primaryText }}>PENYELARAS PROGRAM</p>
             </div>
             <div className="text-right pb-1">
               <p className="text-[8px] md:text-[10px] font-black italic opacity-60 uppercase tracking-[0.2em]">Sistem Laporan Digital OPR &bull; v2.5</p>

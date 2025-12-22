@@ -1,5 +1,5 @@
 {
-  "name": "SK All Saints Report Generator",
+  "name": "SKAS | OPR GENERATOR",
   "description": "An infographic-style school report generator for SK All Saints, featuring image uploads and AI-powered text refinement.",
   "requestFramePermissions": [
     "camera"
